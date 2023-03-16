@@ -20,22 +20,24 @@ def get_train_data_loader(data_path,batch_size,shuffle= True):
     class_names = dataset.classes
     print(f"Train image size : {len(dataset)}")
     print(f"train classes: {class_names}")
-    dataloader = DataLoader(dataset, batch_size,shuffle)
-    return dataloader
+    dataloader = {'train':[DataLoader(dataset, batch_size,shuffle)],'val':[]}
+    return dataloader,class_names
 
 
 def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0):
     print("getting eval data loader...")
     dataset = datasets.ImageFolder(data_path,transform=data_transform)
     class_names = dataset.classes
-    print(f"Train image size : {len(dataset)}")
     print(f"train classes: {class_names}")
     if cv <= 1:
-        splits=KFold(n_splits=2,shuffle=True,random_state=42)
+        splits=KFold(n_splits=4,shuffle=True,random_state=42)
     else:
         splits=KFold(n_splits=cv,shuffle=True,random_state=42)
     data_loader = {'train':[], 'val':[]}
     for fold, (train_idx,val_idx) in enumerate(splits.split(np.arange(len(dataset)))):
+        if fold == 0:
+            print(f"Train image size : {len(train_idx)}")
+            print(f"val image size : {len(val_idx)}")
         train_sampler = SubsetRandomSampler(train_idx)
         val_sampler = SubsetRandomSampler(val_idx)
         data_loader['train'].append( DataLoader(dataset, batch_size=batch_size, sampler=train_sampler))

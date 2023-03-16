@@ -12,6 +12,7 @@ from data import get_train_data_loader,get_test_data_loader,get_eval_data_loader
 
 parser = argparse.ArgumentParser(description='training and cross validation')
 parser.add_argument('--optim', type = str, help='select between sgd or adam', default = 'sgd' )
+parser.add_argument('--weight_decay', type = float , default = 0.05)
 
 parser.add_argument('--data', type=str, default='example', metavar='D',
                     help="folder where data is located. train_images/ and test_images/ need to be found in the folder")
@@ -56,7 +57,7 @@ def train_epoch(dataloader,model,optimizer,criterion, device):
     
     return train_loss,train_correct
 
-def valid_epoch(model,device,dataloader,criterion):
+def valid_epoch(dataloader,model,optimizer,criterion, device):
     valid_loss, val_correct = 0.0, 0
     model.eval()
     for images, labels in dataloader:
@@ -74,18 +75,26 @@ def train(dataloader,model,optimizer,criterion, device, eval,epochs):
     if eval:
         test_loader = dataloader['val'][0]
     for epoch in range(epochs):
-        train_loss, train_correct=train_epoch(model,device,train_loader,criterion,optimizer)
+        train_loss, train_correct=train_epoch(train_loader,model,optimizer,criterion,device)
         if eval:
-            test_loss, test_correct=valid_epoch(model,device,test_loader,criterion)
+            test_loss, test_correct=valid_epoch(test_loader,model,optimizer,criterion,device)
 
         train_loss = train_loss / len(train_loader.sampler)
         train_acc = train_correct / len(train_loader.sampler) * 100
         if eval:
             test_loss = test_loss / len(test_loader.sampler)
             test_acc = test_correct / len(test_loader.sampler) * 100
-
-        print("Epoch:{}/{} AVG Training Loss:{:.3f} AVG Test Loss:{:.3f} AVG Training Acc {:.2f} % AVG Test Acc {:.2f} %".format(epoch + 1,
-                                                        test_acc))
+            print("Epoch:{}/{} AVG Training Loss:{:.3f} AVG Test Loss:{:.3f} AVG Training Acc {:.2f} % AVG Test Acc {:.2f} %".format(epoch + 1,
+                                                                                                             epochs,
+                                                                                                             train_loss,
+                                                                                                             test_loss,
+                                                                                                             train_acc,
+                                                                                                             test_acc))
+        else:
+            print("Epoch:{}/{} AVG Training Loss:{:.3f} AVG Training Acc {:.2f} %".format(epoch + 1,
+                                                                                                             epochs,
+                                                                                                             train_loss,
+                                                                                                             train_acc))
         history['train_loss'].append(train_loss)
         history['train_acc'].append(train_acc)
         if eval:
@@ -97,10 +106,14 @@ def train(dataloader,model,optimizer,criterion, device, eval,epochs):
             torch.save(model.state_dict(), model_file)
  
     avg_train_loss = np.mean(history['train_loss'])
-    avg_test_loss = np.mean(history['test_loss'])
     avg_train_acc = np.mean(history['train_acc'])
-    avg_test_acc = np.mean(history['test_acc'])
-    print("Average Training Loss: {:.4f} \t Average Test Loss: {:.4f} \t Average Training Acc: {:.3f} \t Average Test Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
+    if eval:
+        avg_test_loss = np.mean(history['test_loss'])
+        avg_test_acc = np.mean(history['test_acc'])
+        print("Average Training Loss: {:.4f} \t Average Test Loss: {:.4f} \t Average Training Acc: {:.3f} \t Average Test Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
+    else:
+        print("Average Training Loss: {:.4f}  \t Average Training Acc: {:.3f} ".format(avg_train_loss,avg_train_acc))
+
     
     return history
 
@@ -117,16 +130,15 @@ if __name__ == "__main__":
         if args.cv <= 1:
             data_loader,classes= get_eval_data_loader(args.data, args.batch_size)
         else:
+            print(f"Cross validation with cv {args.cv}")
             data_loaders,classes= get_eval_data_loader(args.data, args.batch_size,cv=args.cv)
-            for data_loader in data_loaders:
-                print(f"Fold 1/{args.cv}...")
     elif args.test_path:
         print("training and testing")
         test_loader = get_test_data_loader(args.test_path, args.batch_size)
         train_loader = get_train_data_loader(args.data,args.batch_size)
         data_loader = {'train':[train_loader],'val':[test_loader]}
     else:
-        data_loader = {'train':get_train_data_loader(args.data,args.batch_size)}
+        data_loader,classes =get_train_data_loader(args.data,args.batch_size)
     
     assert len(classes) == 2, "the number of classes must be equals to 2"
     model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=108160)
@@ -144,8 +156,15 @@ if __name__ == "__main__":
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.optim == 'adam':
         optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
-
-    history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
+    
+    if args.eval and args.cv >1:
+        for i in range(args.cv) :
+            print(f"Fold {i+1}/{args.cv}...")
+            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=108160)
+            train({'train':[data_loaders['train'][i]],'val':[data_loaders['val'][i]]},\
+                  model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
+    else:
+        history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
 
 
 
