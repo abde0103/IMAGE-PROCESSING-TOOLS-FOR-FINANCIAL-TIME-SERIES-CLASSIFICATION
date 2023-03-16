@@ -5,7 +5,9 @@ import matplotlib.pyplot  as plt
 
 def log_return (X) : 
     differences = np.diff(X, prepend = np.nan)
-    return np.log1p(differences / X)
+    ret =  np.log1p(differences / X)
+    ret[0] = 0
+    return ret
 
 
 def ValSUREThresh(X):
@@ -33,7 +35,7 @@ def ValSUREThresh(X):
     THR = np.sqrt(a[ibest])
     return THR
 
-def discredte_wavelet_denoise (data , wavelet = 'db4', level = 5):
+def discrete_wavelet_denoise (data , wavelet = 'db4', level = 5):
     
     """
     Reconstruct signal after wavelet decompostion and soft thresholding using Rigrsure threshold
@@ -94,7 +96,7 @@ try:
     data = pd.read_csv('example.csv')
     k = data.shape[0]
     plt.plot(data['Adj Close'].to_numpy()[:k], label = 'original')
-    plt.plot(discredte_wavelet_denoise (data['Adj Close'][:k]), label = 'denoised')
+    plt.plot(discrete_wavelet_denoise (data['Adj Close'][:k]), label = 'denoised')
     plt.legend()
     plt.savefig('example.png')
     plt.show()
