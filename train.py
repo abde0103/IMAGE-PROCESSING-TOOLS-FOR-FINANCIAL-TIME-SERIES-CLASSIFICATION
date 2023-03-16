@@ -7,16 +7,16 @@ import torch.optim as optim
 from torchvision import datasets
 from tqdm import tqdm
 from cnn import Cnn
+import numpy as np
+from data import get_train_data_loader,get_test_data_loader,get_eval_data_loader
 
 parser = argparse.ArgumentParser(description='training and cross validation')
 parser.add_argument('--optim', type = str, help='select between sgd or adam', default = 'sgd' )
-parser.add_argument('--augment_data', action = 'store_true' ,help = 'if you want to apply data augmentation')
-parser.add_argument('--tensorboard_log_dir', type = str, help = 'path for tensorboard output', required=True)
 
 parser.add_argument('--data', type=str, default='example', metavar='D',
-                    help="folder where data is located. train_images/ and val_images/ need to be found in the folder")
-parser.add_argument('--batch-size', type=int, default=64, metavar='B',
-                    help='input batch size for training (default: 64)')
+                    help="folder where data is located. train_images/ and test_images/ need to be found in the folder")
+parser.add_argument('--batch_size', type=int, default=32, metavar='B',
+                    help='input batch size for training (default: 32)')
 parser.add_argument('--epochs', type=int, default=10, metavar='N',
                     help='number of epochs to train (default: 10)')
 parser.add_argument('--lr', type=float, default=0.1, metavar='LR',
@@ -27,128 +27,126 @@ parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
 parser.add_argument('--log-interval', type=int, default=10, metavar='N',
                     help='how many batches to wait before logging training status')
-parser.add_argument('--experiment', type=str, default='experiment', metavar='E',
+parser.add_argument('--eval', action='store_true',
                     help='folder where experiment outputs are located.')
+parser.add_argument('--cv', type = int, default=1 ,help='number of fold for cross validation')
+parser.add_argument('--test_path', type=str,  metavar='E',
+                    help='folder where experiment outputs are located.')
+parser.add_argument('--in_channel', type= int, default=1, help="number of input channel")
+parser.add_argument('--out_channel1', type= int, default=10, help="number of output channel for the first conv layer")
+parser.add_argument("--save_model", type=str,help='location to store the trained')
 
-args = parser.parse_args()
-use_cuda = torch.cuda.is_available()
-torch.manual_seed(args.seed)
 
 # Data initialization and loading
-from data import data_transforms
-from data import data_augmentation
 
-if args.augment_data:
-  dataset1 = datasets.ImageFolder(args.data + '/train_images',
-                         transform=data_transforms)
-  dataset2 = datasets.ImageFolder(args.data + '/train_images',
-                         transform=data_augmentation)
-  f_dataset = torch.utils.data.ConcatDataset([dataset1,dataset2])
-  classes = set(dataset1.targets)
-  n_classes = len(classes)
-
-else:
-  f_dataset =  datasets.ImageFolder(args.data + '/train_images',
-                        transform=data_transforms)
-  classes = set(f_dataset.targets)
-  n_classes = len(classes)                  
-
-if args.final:
-  print('final training')
-  val_dataset =  datasets.ImageFolder(args.data + '/val_images',
-                         transform=data_transforms)
-  train_loader = torch.utils.data.DataLoader( torch.utils.data.ConcatDataset([f_dataset,val_dataset])
-      ,
-      batch_size=args.batch_size, shuffle=True, num_workers=1)
-else:
-  train_loader = torch.utils.data.DataLoader( f_dataset
-      ,
-      batch_size=args.batch_size, shuffle=True, num_workers=1)
-  val_loader = torch.utils.data.DataLoader(
-      datasets.ImageFolder(args.data + '/val_images',
-                          transform=data_transforms),
-      batch_size=args.batch_size, shuffle=False, num_workers=1)
-
-
-
-
-
-model = Cnn(n_classes, args.only_fc_layer, args.auto_path)
-
-if use_cuda:
-    print('Using GPU')
-    model.cuda()
-else:
-    print('Using CPU')
-
-if args.optim == 'sgd':
-  optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-elif args.optim == 'adam':
-  optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
-
-from torch.utils.tensorboard import SummaryWriter
-exp = 'res152_LR_{}_mom_{}_only_{}_batch_size_{}_augmented_{}_optim_{}_weight_{}'.format(args.lr,args.momentum,args.only_fc_layer, \
-args.batch_size,args.augment_data, args.optim, args.weight_decay)
-tf_dir = args.tensorboard_log_dir+exp
-writer = SummaryWriter(log_dir = tf_dir)
-step = 0
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma = 0.5, verbose = True)
-def train(epoch,step):
+def train_epoch(dataloader,model,optimizer,criterion, device):
+    train_loss,train_correct=0.0,0
     model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        if use_cuda:
-            data, target = data.cuda(), target.cuda()
+    for images, labels in dataloader:
+
+        images,labels = images.to(device),labels.to(device)
         optimizer.zero_grad()
-        output = model(data)
-        criterion = torch.nn.CrossEntropyLoss(reduction='mean')
-        loss = criterion(output, target)
+        output = model(images)
+        loss = criterion(output,labels)
         loss.backward()
         optimizer.step()
-        if batch_idx % args.log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.data.item()))
-        if step % args.log_interval == 0:
-          writer.add_scalar('train_loss',loss.data.item(),step)
-        step +=1
+        train_loss += loss.item() * images.size(0)
+        scores, predictions = torch.max(output.data, 1)
+        train_correct += (predictions == labels).sum().item()
+    
+    return train_loss,train_correct
 
-    return step
-
-
-def validation(epoch):
+def valid_epoch(model,device,dataloader,criterion):
+    valid_loss, val_correct = 0.0, 0
     model.eval()
-    validation_loss = 0
-    correct = 0
-    for data, target in val_loader:
-        if use_cuda:
-            data, target = data.cuda(), target.cuda()
-        output = model(data)
-        # sum up batch loss
-        criterion = torch.nn.CrossEntropyLoss(reduction='mean')
-        validation_loss += criterion(output, target).data.item()
-        # get the index of the max log-probability
-        pred = output.data.max(1, keepdim=True)[1]
-        correct += pred.eq(target.data.view_as(pred)).cpu().sum()
+    for images, labels in dataloader:
+        images,labels = images.to(device),labels.to(device)
+        output = model(images)
+        loss=criterion(output,labels)
+        valid_loss+=loss.item()*images.size(0)
+        scores, predictions = torch.max(output.data,1)
+        val_correct+=(predictions == labels).sum().item()
+    return valid_loss,val_correct
 
-    validation_loss /= len(val_loader.dataset)
-    print('\nValidation set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)'.format(
-    validation_loss, correct, len(val_loader.dataset),
-    100. * correct / len(val_loader.dataset)))
-    writer.add_scalar('validation_loss',validation_loss, epoch)
-    writer.add_scalar('validation accuracy',correct/ len(val_loader.dataset),epoch)
+def train(dataloader,model,optimizer,criterion, device, eval,epochs):
+    history = {'train_loss': [], 'test_loss': [],'train_acc':[],'test_acc':[]}
+    train_loader = dataloader['train'][0]
+    if eval:
+        test_loader = dataloader['val'][0]
+    for epoch in range(epochs):
+        train_loss, train_correct=train_epoch(model,device,train_loader,criterion,optimizer)
+        if eval:
+            test_loss, test_correct=valid_epoch(model,device,test_loader,criterion)
+
+        train_loss = train_loss / len(train_loader.sampler)
+        train_acc = train_correct / len(train_loader.sampler) * 100
+        if eval:
+            test_loss = test_loss / len(test_loader.sampler)
+            test_acc = test_correct / len(test_loader.sampler) * 100
+
+        print("Epoch:{}/{} AVG Training Loss:{:.3f} AVG Test Loss:{:.3f} AVG Training Acc {:.2f} % AVG Test Acc {:.2f} %".format(epoch + 1,
+                                                        test_acc))
+        history['train_loss'].append(train_loss)
+        history['train_acc'].append(train_acc)
+        if eval:
+            history['test_acc'].append(test_acc)
+            history['test_loss'].append(test_loss)
+
+        if args.save_model and (not eval or args.test_path):
+            model_file = 'model_'+'_epoch_' + str(epoch) + '.pth'
+            torch.save(model.state_dict(), model_file)
+ 
+    avg_train_loss = np.mean(history['train_loss'])
+    avg_test_loss = np.mean(history['test_loss'])
+    avg_train_acc = np.mean(history['train_acc'])
+    avg_test_acc = np.mean(history['test_acc'])
+    print("Average Training Loss: {:.4f} \t Average Test Loss: {:.4f} \t Average Training Acc: {:.3f} \t Average Test Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
+    
+    return history
 
 
-for epoch in range(1, args.epochs + 1):
-    step = train(epoch, step)
-    scheduler.step()
-    if not args.final:
-      validation(epoch)
-      model_file = args.experiment + '/model_'+exp+'_epoch_' + str(epoch) + '.pth'
-      torch.save(model.state_dict(), model_file)
-      print('Saved model to ' + model_file + '. You can run `python evaluate.py --model ' + model_file + '` to generate the Kaggle formatted csv file\n')
-if args.final:
-  model_file = args.experiment + '/final_model_'+exp+'_epoch_' + str(epoch) + '.pth'
-  torch.save(model.state_dict(), model_file)
-  print('Saved model to ' + model_file + '. You can run `python evaluate.py --model ' + model_file + '` to generate the Kaggle formatted csv file\n')
+args = parser.parse_args()
+
+if __name__ == "__main__":
+    use_cuda = torch.cuda.is_available()
+    torch.manual_seed(args.seed)
+    use_cuda = torch.cuda.is_available()
+    torch.manual_seed(args.seed)
+    if args.eval:
+        print("training and validating")
+        if args.cv <= 1:
+            data_loader,classes= get_eval_data_loader(args.data, args.batch_size)
+        else:
+            data_loaders,classes= get_eval_data_loader(args.data, args.batch_size,cv=args.cv)
+            for data_loader in data_loaders:
+                print(f"Fold 1/{args.cv}...")
+    elif args.test_path:
+        print("training and testing")
+        test_loader = get_test_data_loader(args.test_path, args.batch_size)
+        train_loader = get_train_data_loader(args.data,args.batch_size)
+        data_loader = {'train':[train_loader],'val':[test_loader]}
+    else:
+        data_loader = {'train':get_train_data_loader(args.data,args.batch_size)}
+    
+    assert len(classes) == 2, "the number of classes must be equals to 2"
+    model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=108160)
+    if use_cuda:
+        print('Using GPU')
+        model.cuda()
+        device = torch.device('cuda')
+    else:
+        print('Using CPU')
+        device = torch.device('cpu')
+    
+
+    criterion = nn.CrossEntropyLoss(reduction='mean')
+    if args.optim == 'sgd':
+        optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    elif args.optim == 'adam':
+        optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
+
+    history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
 
 
+
+    
