@@ -46,8 +46,7 @@ def generate_image(sample ,path, level_discrete_wavelet_transform,discrete_wavel
     
     
 
-def generate_NN_dataset
-    (
+def generate_NN_dataset(
     signal ,
     window_size,
     method_labels = 'mean',
@@ -92,18 +91,18 @@ def generate_NN_dataset
     """
     
     # create folder per label
-    os.makedirs('0', exist_ok=True)
-    os.makedirs('1', exist_ok=True)
+    os.makedirs(os.path.join(str(window_size),'0'), exist_ok=True)
+    os.makedirs(os.path.join(str(window_size),'1'), exist_ok=True)
     
     #labels
     labels =  generate_labels(signal, window_size, method =method_labels )
     
     #create images
-    for i in range(signal.shape[0] - window_size + 1):
+    for i in tqdm(range(signal.shape[0] - window_size + 1)):
   
         sample = signal[i:i+window_size]
       
-        path = os.path.join(str(labels[i]), str(i))
+        path = os.path.join(str(window_size), os.path.join(str(labels[i]), str(i)))
         
         generate_image(
             sample ,
@@ -112,6 +111,3 @@ def generate_NN_dataset
             discrete_wavelet,
             continuous_wavelet,
              **kwargs ) 
-    
-    
-
