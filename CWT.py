@@ -3,7 +3,7 @@ import pywt
 import matplotlib.pyplot as plt 
 
 
-def CWT (denoised_logreturn,show = False , wavelet = 'cmor' ,  **kwargs ) : 
+def CWT (denoised_logreturn,show = False , wavelet = 'cmor' , path ='',  **kwargs ) : 
     
     """
     Return scalogram given logreturn as input
@@ -37,7 +37,7 @@ def CWT (denoised_logreturn,show = False , wavelet = 'cmor' ,  **kwargs ) :
     plt.yscale('log', base = 2)
     plt.ylim([256,1])
     
-    plt.savefig('Scalogram.png')
+    plt.savefig(path)
     
     if show:
         plt.show() 
