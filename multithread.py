@@ -21,6 +21,11 @@ parser = argparse.ArgumentParser(description='Generation of dataset')
 parser.add_argument('--w', type = int, help='window_size', default = 14 )
 parser.add_argument('--level', type = int , help='level discrete wavelet', default = 2)
 parser.add_argument('--jump', type = int, help='jump', default = 8 )
+parser.add_argument('--method', type = str, help='denoising method : dwt ou ssa', default = 'dwt' )
+parser.add_argument('--w_ssa', type = int, help='Window shape for SSA denoising', default = 5)
+parser.add_argument('--thresh', type = float, help='Threshold SSA denoising', default = 0.9)
+
+
 
 args = parser.parse_args()
 
@@ -39,7 +44,10 @@ if __name__ == '__main__':
                 signal[i*n//threads:] ,
                 args.w,
                 i,
+                args.method,
                 'mean',
+                args.w_ssa,
+                args.thresh,
                 args.jump,
                 args.level,
                 'db4',
@@ -59,7 +67,10 @@ if __name__ == '__main__':
                 signal[i*n//threads:(i+1)*n//threads] ,
                 args.w,
                 i,
+                args.method,
                 'mean',
+                args.w_ssa,
+                args.thresh,
                 args.jump,
                 args.level,
                 'db4',

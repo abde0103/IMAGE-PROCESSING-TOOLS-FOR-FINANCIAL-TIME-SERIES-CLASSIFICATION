@@ -1,3 +1,4 @@
 yfinance
 torch
 torchvision
+minepy

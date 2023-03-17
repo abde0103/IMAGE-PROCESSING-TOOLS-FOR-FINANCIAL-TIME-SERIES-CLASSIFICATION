@@ -20,7 +20,7 @@ def BBANDS(data, window):
     MA = data['Adj Close'].rolling(window).mean()
     SD = data['Adj Close'].rolling(window).std()
 #     data['MiddleBand'] = MA ## Equal MA 30 
-    data['UpperBand'] = MA + (2 * SD) 
+#     data['UpperBand'] = MA + (2 * SD) 
     data['LowerBand'] = MA - (2 * SD)
     return data
 

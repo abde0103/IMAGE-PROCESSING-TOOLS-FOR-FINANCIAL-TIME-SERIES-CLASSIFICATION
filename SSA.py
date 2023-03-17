@@ -57,7 +57,7 @@ def SSA (sample , window_SSA = 10, thresh = 0.91, show = True):
     array:
         Denoised sample 
     """
-    
+
     ## Normalize sample (eignevalues will have more meaning )
     sample_mean, sample_std  = sample.mean(), sample.std()
     normalized_sample = (sample - sample_mean)/sample_std
