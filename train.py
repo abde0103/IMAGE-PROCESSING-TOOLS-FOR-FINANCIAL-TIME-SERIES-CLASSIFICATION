@@ -8,11 +8,11 @@ from torchvision import datasets
 from tqdm import tqdm
 from cnn import Cnn
 import numpy as np
-from data import get_train_data_loader,get_test_data_loader,get_eval_data_loader
+from data import get_train_data_loader,get_test_data_loader,get_eval_data_loader,plot_imageTensor
 
 parser = argparse.ArgumentParser(description='training and cross validation')
 parser.add_argument('--optim', type = str, help='select between sgd or adam', default = 'sgd' )
-parser.add_argument('--weight_decay', type = float , default = 0.05)
+parser.add_argument('--weight_decay', type = float , default = 0)
 
 parser.add_argument('--data', type=str, default='example', metavar='D',
                     help="folder where data is located. train_images/ and test_images/ need to be found in the folder")
@@ -36,6 +36,7 @@ parser.add_argument('--test_path', type=str,  metavar='E',
 parser.add_argument('--in_channel', type= int, default=1, help="number of input channel")
 parser.add_argument('--out_channel1', type= int, default=10, help="number of output channel for the first conv layer")
 parser.add_argument("--save_model", type=str,help='location to store the trained')
+parser.add_argument("--resizing", type=int,default=50,help='location to store the trained')
 
 
 # Data initialization and loading
@@ -44,7 +45,6 @@ def train_epoch(dataloader,model,optimizer,criterion, device):
     train_loss,train_correct=0.0,0
     model.train()
     for images, labels in dataloader:
-
         images,labels = images.to(device),labels.to(device)
         optimizer.zero_grad()
         output = model(images)
@@ -69,7 +69,7 @@ def valid_epoch(dataloader,model,optimizer,criterion, device):
         val_correct+=(predictions == labels).sum().item()
     return valid_loss,val_correct
 
-def train(dataloader,model,optimizer,criterion, device, eval,epochs):
+def train(dataloader,model,optimizer,criterion, device, eval,epochs, cv = False):
     history = {'train_loss': [], 'test_loss': [],'train_acc':[],'test_acc':[]}
     train_loader = dataloader['train'][0]
     if eval:
@@ -105,14 +105,20 @@ def train(dataloader,model,optimizer,criterion, device, eval,epochs):
             model_file = 'model_'+'_epoch_' + str(epoch) + '.pth'
             torch.save(model.state_dict(), model_file)
  
-    avg_train_loss = np.mean(history['train_loss'])
-    avg_train_acc = np.mean(history['train_acc'])
-    if eval:
-        avg_test_loss = np.mean(history['test_loss'])
-        avg_test_acc = np.mean(history['test_acc'])
-        print("Average Training Loss: {:.4f} \t Average Test Loss: {:.4f} \t Average Training Acc: {:.3f} \t Average Test Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
-    else:
-        print("Average Training Loss: {:.4f}  \t Average Training Acc: {:.3f} ".format(avg_train_loss,avg_train_acc))
+    # avg_train_loss = np.mean(history['train_loss'])
+    # avg_train_acc = np.mean(history['train_acc'])
+    # if eval:
+    #     avg_test_loss = np.mean(history['test_loss'])
+    #     avg_test_acc = np.mean(history['test_acc'])
+    #     print("Average Training Loss: {:.4f} \t Average Test Loss: {:.4f} \t Average Training Acc: {:.3f} \t Average Test Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
+    # else:
+    #     print("Average Training Loss: {:.4f}  \t Average Training Acc: {:.3f} ".format(avg_train_loss,avg_train_acc))
+
+    if cv:
+        history['train_loss'] = history['train_loss'][-1]
+        history['train_acc'] = history['train_acc'][-1]
+        history['test_acc'] = history['test_acc'][-1]
+        history['test_loss'] = history['test_loss'][-1]
 
     
     return history
@@ -121,6 +127,9 @@ def train(dataloader,model,optimizer,criterion, device, eval,epochs):
 args = parser.parse_args()
 
 if __name__ == "__main__":
+    resize = args.resizing
+    k_size = 3
+    linear_size = 20*(((resize - k_size + 1)//2 - k_size +1)//2)**2
     use_cuda = torch.cuda.is_available()
     torch.manual_seed(args.seed)
     use_cuda = torch.cuda.is_available()
@@ -128,20 +137,20 @@ if __name__ == "__main__":
     if args.eval:
         print("training and validating")
         if args.cv <= 1:
-            data_loader,classes= get_eval_data_loader(args.data, args.batch_size)
+            data_loader,classes= get_eval_data_loader(args.data, args.batch_size,resize=resize)
         else:
             print(f"Cross validation with cv {args.cv}")
-            data_loaders,classes= get_eval_data_loader(args.data, args.batch_size,cv=args.cv)
+            data_loaders,classes= get_eval_data_loader(args.data, args.batch_size,cv=args.cv,resize=resize)
     elif args.test_path:
         print("training and testing")
-        test_loader = get_test_data_loader(args.test_path, args.batch_size)
-        train_loader = get_train_data_loader(args.data,args.batch_size)
+        test_loader = get_test_data_loader(args.test_path, args.batch_size,resize=resize)
+        train_loader = get_train_data_loader(args.data,args.batch_size,resize=resize)
         data_loader = {'train':[train_loader],'val':[test_loader]}
     else:
-        data_loader,classes =get_train_data_loader(args.data,args.batch_size)
+        data_loader,classes =get_train_data_loader(args.data,args.batch_size,resize=resize)
     
     assert len(classes) == 2, "the number of classes must be equals to 2"
-    model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=108160)
+    model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size)
     if use_cuda:
         print('Using GPU')
         model.cuda()
@@ -160,9 +169,26 @@ if __name__ == "__main__":
     if args.eval and args.cv >1:
         for i in range(args.cv) :
             print(f"Fold {i+1}/{args.cv}...")
-            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=108160)
-            train({'train':[data_loaders['train'][i]],'val':[data_loaders['val'][i]]},\
-                  model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
+            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size)
+            if args.optim == 'sgd':
+                optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+            elif args.optim == 'adam':
+                optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
+            history = {'train_loss':[],'train_acc':[],'test_acc':[], 'test_loss':[]}
+            temp = train({'train':[data_loaders['train'][i]],'val':[data_loaders['val'][i]]},\
+                  model,optimizer,criterion,device,args.eval or args.test_path,args.epochs, cv=True)
+            history['train_loss'].append(temp['train_loss'])
+            history['train_acc'].append(temp['train_acc'])
+            history['test_loss'].append(temp['test_loss'])
+            history['test_acc'].append(temp['test_acc'])
+        avg_train_loss = np.mean(history['train_loss'])
+        avg_train_acc = np.mean(history['train_acc'])
+        avg_test_loss = np.mean(history['test_loss'])
+        avg_test_acc = np.mean(history['test_acc'])
+        print("\n")    
+        print("Average Training CV Loss: {:.4f} \t Average Test CV Loss: {:.4f} \t Average Training CV Acc: {:.3f} \t Average Test CV Acc: {:.3f}".format(avg_train_loss,avg_test_loss,avg_train_acc,avg_test_acc))
+
+        
     else:
         history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
 

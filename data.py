@@ -5,17 +5,21 @@ from torchvision import datasets
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader,TensorDataset,random_split,SubsetRandomSampler, ConcatDataset
+import matplotlib.pyplot as plt
 
 
-data_transform = transforms.Compose(
-  [transforms.Resize((224,224)),
-  transforms.ToTensor(),
-  #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-  ]
-)
+def get_transform(resize):
+    data_transform = transforms.Compose(
+    [transforms.Resize((resize, resize)),
+    transforms.ToTensor(),
+    #transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ]
+    )
+    return data_transform
 
-def get_train_data_loader(data_path,batch_size,shuffle= True):
+def get_train_data_loader(data_path,batch_size,shuffle= True,resize= 50):
     print("getting eval data loader...")
+    data_transform = get_transform(resize)
     dataset = datasets.ImageFolder(data_path,transform=data_transform)
     class_names = dataset.classes
     print(f"Train image size : {len(dataset)}")
@@ -24,8 +28,9 @@ def get_train_data_loader(data_path,batch_size,shuffle= True):
     return dataloader,class_names
 
 
-def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0):
+def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0,resize = 50):
     print("getting eval data loader...")
+    data_transform = get_transform(resize)
     dataset = datasets.ImageFolder(data_path,transform=data_transform)
     class_names = dataset.classes
     print(f"train classes: {class_names}")
@@ -46,13 +51,19 @@ def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0):
             break
     return data_loader,class_names
 
-def get_test_data_loader(data_path, batch_size, shuffle = False):
+def get_test_data_loader(data_path, batch_size, shuffle = False,resize = 50):
+    data_transform = get_transform(resize)
     dataset = datasets.ImageFolder(data_path,transform=data_transform)
     data_loader = DataLoader(dataset,batch_size,shuffle)
     class_names = dataset.classes
     print(f"test classes: {class_names}")
     print(f"test image size : {len(dataset)}")
     return data_loader,class_names
+
+def plot_imageTensor(tensor):
+    img = transforms.functional.to_pil_image(tensor)
+    plt.imshow(img)
+    plt.show(block = False ) 
 
 
         

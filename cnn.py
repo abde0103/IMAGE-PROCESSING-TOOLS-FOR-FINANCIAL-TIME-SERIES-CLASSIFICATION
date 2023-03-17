@@ -13,17 +13,14 @@ class Cnn(nn.Module):
         self.conv1 = nn.Conv2d(in1,out1,3)
         self.pool = nn.MaxPool2d(2,2)
         self.conv2 = nn.Conv2d(out1,2*out1,3)
-        self.conv3 = nn.Conv2d(2*out1,4*out1,3)
         self.linear1 = nn.Linear(linear_size,2)
 
     
     def forward(self,x):
-
         out = F.relu(self.conv1(x))
         out = self.pool(out)
         out = F.relu(self.conv2(out))
         out = self.pool(out)
-        out = F.relu(self.conv3(out))
         out = F.relu(self.linear1(out.view(x.shape[0],-1)))
         return out
 
