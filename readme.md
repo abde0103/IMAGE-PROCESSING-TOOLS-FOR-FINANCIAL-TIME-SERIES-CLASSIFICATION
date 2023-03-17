@@ -3,4 +3,4 @@ to train and do 4-Fold Cross validation, just run \\
 
 To create a dataset for NN, run 
 
-''' python multithread.py'''
+``` python multithread.py```
