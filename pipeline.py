@@ -49,7 +49,9 @@ def generate_image(sample ,path, level_discrete_wavelet_transform,discrete_wavel
 def generate_NN_dataset(
     signal ,
     window_size,
+    thread = 0,
     method_labels = 'mean',
+    jump = 1,
     level_discrete_wavelet_transform = 2,
     discrete_wavelet = 'db4',
     continuous_wavelet = 'cmor', 
@@ -66,6 +68,9 @@ def generate_NN_dataset(
         
     window_size : int
         The length of the generate photo
+    
+    thread : int
+        num of thread that executes this function: purely technical (forget about it)
         
     method_labels : string
         default : 'mean' 
@@ -98,11 +103,11 @@ def generate_NN_dataset(
     labels =  generate_labels(signal, window_size, method =method_labels )
     
     #create images
-    for i in tqdm(range(signal.shape[0] - window_size + 1)):
+    for i in tqdm(range(0,signal.shape[0] - window_size + 1, jump)):
   
         sample = signal[i:i+window_size]
       
-        path = os.path.join(str(window_size), os.path.join(str(labels[i]), str(i)))
+        path = os.path.join(str(window_size), os.path.join(str(labels[i]), 'thread_'+str(thread)+'_' + str(i)))
         
         generate_image(
             sample ,
@@ -111,3 +116,4 @@ def generate_NN_dataset(
             discrete_wavelet,
             continuous_wavelet,
              **kwargs ) 
+ 
