@@ -10,8 +10,9 @@ data = make_data(SP500)
 signal = data['Adj Close'].to_numpy()
 kwargs = {'b' : 2., 'c' : 1. }
 
-window_size = 360
+window_size = 30
 level_discrete_wavelet_transform = 2
+jump = 5
 
 
 
@@ -33,7 +34,7 @@ if __name__ == '__main__':
                 window_size,
                 i,
                 'mean',
-                1,
+                jump,
                 2,
                 'db4',
                 'cmor'),
@@ -53,7 +54,7 @@ if __name__ == '__main__':
                 window_size,
                 i,
                 'mean',
-                1,
+                jump,
                 2,
                 'db4',
                 'cmor'),
