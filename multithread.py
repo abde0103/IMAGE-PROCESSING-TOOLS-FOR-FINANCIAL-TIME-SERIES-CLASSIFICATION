@@ -2,7 +2,7 @@ import yfinance as yf
 import multiprocessing as mp
 from make_data import make_data
 from pipeline import *
-
+import argparse
 
 
 SP500 = yf.download('SPY', keepna = True)
@@ -10,13 +10,19 @@ data = make_data(SP500)
 signal = data['Adj Close'].to_numpy()
 kwargs = {'b' : 2., 'c' : 1. }
 
-window_size = 30
-level_discrete_wavelet_transform = 2
-jump = 5
+
+# window_size = 14
+# level_discrete_wavelet_transform = 2
+# jump = 8
 
 
 
+parser = argparse.ArgumentParser(description='Generation of dataset')
+parser.add_argument('--w', type = int, help='window_size', default = 14 )
+parser.add_argument('--level', type = int , help='level discrete wavelet', default = 2)
+parser.add_argument('--jump', type = int, help='jump', default = 8 )
 
+args = parser.parse_args()
 
 
 if __name__ == '__main__':
@@ -31,11 +37,11 @@ if __name__ == '__main__':
                 target=generate_NN_dataset,
                 args = (
                 signal[i*n//threads:] ,
-                window_size,
+                args.w,
                 i,
                 'mean',
-                jump,
-                2,
+                args.jump,
+                args.level,
                 'db4',
                 'cmor'),
                 kwargs = kwargs        
@@ -51,11 +57,11 @@ if __name__ == '__main__':
                 target=generate_NN_dataset,
                 args = (
                 signal[i*n//threads:(i+1)*n//threads] ,
-                window_size,
+                args.w,
                 i,
                 'mean',
-                jump,
-                2,
+                args.jump,
+                args.level,
                 'db4',
                 'cmor'),
                 kwargs = kwargs)
