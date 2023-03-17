@@ -54,6 +54,7 @@ def train_epoch(dataloader,model,optimizer,criterion, device):
         train_loss += loss.item() * images.size(0)
         scores, predictions = torch.max(output.data, 1)
         train_correct += (predictions == labels).sum().item()
+        #print(f"loss {loss.data.item()}")
     
     return train_loss,train_correct
 
@@ -72,9 +73,11 @@ def valid_epoch(dataloader,model,optimizer,criterion, device):
 def train(dataloader,model,optimizer,criterion, device, eval,epochs, cv = False):
     history = {'train_loss': [], 'test_loss': [],'train_acc':[],'test_acc':[]}
     train_loader = dataloader['train'][0]
+    
     if eval:
         test_loader = dataloader['val'][0]
     for epoch in range(epochs):
+        #print(f"epoch {epoch}/{epochs}")
         train_loss, train_correct=train_epoch(train_loader,model,optimizer,criterion,device)
         if eval:
             test_loss, test_correct=valid_epoch(test_loader,model,optimizer,criterion,device)
@@ -167,14 +170,14 @@ if __name__ == "__main__":
         optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
     
     if args.eval and args.cv >1:
+        history = {'train_loss':[],'train_acc':[],'test_acc':[], 'test_loss':[]}
         for i in range(args.cv) :
             print(f"Fold {i+1}/{args.cv}...")
-            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size)
+            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size).to(device)
             if args.optim == 'sgd':
                 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
             elif args.optim == 'adam':
                 optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
-            history = {'train_loss':[],'train_acc':[],'test_acc':[], 'test_loss':[]}
             temp = train({'train':[data_loaders['train'][i]],'val':[data_loaders['val'][i]]},\
                   model,optimizer,criterion,device,args.eval or args.test_path,args.epochs, cv=True)
             history['train_loss'].append(temp['train_loss'])
