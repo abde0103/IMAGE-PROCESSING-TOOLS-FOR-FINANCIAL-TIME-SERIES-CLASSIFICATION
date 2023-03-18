@@ -36,8 +36,8 @@ parser.add_argument('--test_path', type=str,  metavar='E',
 parser.add_argument('--in_channel', type= int, default=1, help="number of input channel")
 parser.add_argument('--out_channel1', type= int, default=10, help="number of output channel for the first conv layer")
 parser.add_argument("--save_model", type=str,help='location to store the trained')
-parser.add_argument("--resizing", type=int,default=50,help='location to store the trained')
-
+parser.add_argument("--resizing", type=int,default=50,help='dimension to resize the raw images in transform')
+parser.add_argument("--kernel", type=int,default=3,help='kernel windows size')
 
 # Data initialization and loading
 
@@ -131,7 +131,7 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     resize = args.resizing
-    k_size = 3
+    k_size = args.kernel
     linear_size = 20*(((resize - k_size + 1)//2 - k_size +1)//2)**2
     use_cuda = torch.cuda.is_available()
     torch.manual_seed(args.seed)
