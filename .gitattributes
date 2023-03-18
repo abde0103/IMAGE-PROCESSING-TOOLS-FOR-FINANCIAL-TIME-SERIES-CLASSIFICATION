@@ -4,3 +4,7 @@ w_30_jump_1_level_2 filter=lfs diff=lfs merge=lfs -text
 w30level2jump10 filter=lfs diff=lfs merge=lfs -text
 window_size360_window_ssa5_thresh0.9_jump10.zip filter=lfs diff=lfs merge=lfs -text
 window_size360_window_ssa50_thresh0.9_jump10.zip filter=lfs diff=lfs merge=lfs -text
+Fourrier_window_size180_level2_jump10.zip filter=lfs diff=lfs merge=lfs -text
+Fourrier_window_size180_window_ssa50_thresh0.9_jump10.zip filter=lfs diff=lfs merge=lfs -text
+Fourrier_window_size360_level2_jump10.zip filter=lfs diff=lfs merge=lfs -text
+Fourrier_window_size360_window_ssa50_thresh0.9_jump10.zip filter=lfs diff=lfs merge=lfs -text
