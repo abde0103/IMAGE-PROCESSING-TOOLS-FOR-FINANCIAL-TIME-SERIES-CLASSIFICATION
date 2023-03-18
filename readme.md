@@ -19,9 +19,13 @@ To evaluate the model on test set
 check some outputs in test_results folder
 
 
-To create a dataset for NN with a windowsize of 360, DWT level of 2 and jumps of 1, run 
+To create a dataset for NN with a windowsize of 360, jumps of 10, run 
 
 
-*Method DWT* ``` python multithread.py --w 360 --jump 10  --level 2 --method dwt ```
+*Method DWT + Fourier spectrogram* ``` python multithread.py --w 360 --jump 10  --level 2 --method dwt --fourier True ```
 
-*Method SSA* ``` python multithread.py --w 360 --jump 10 --w_ssa 50 --thresh 0.9 --method ssa ```
+*Method DWT + Wavelet scalogram* ``` python multithread.py --w 360 --jump 10  --level 2 --method dwt --fourier False ```
+
+*Method SSA + Fourier spectrogram* ``` python multithread.py --w 360 --jump 10 --w_ssa 50 --thresh 0.9 --method ssa --fourier True ```
+
+*Method SSA + wavelet scalogram* ``` python multithread.py --w 360 --jump 10 --w_ssa 50 --thresh 0.9 --method ssa --fourier False ```
