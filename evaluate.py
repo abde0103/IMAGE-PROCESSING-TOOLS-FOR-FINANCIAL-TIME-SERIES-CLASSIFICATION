@@ -56,6 +56,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn.metrics import recall_score
+from sklearn.metrics import confusion_matrix,ConfusionMatrixDisplay
         
 if __name__=="__main__":
     #Dataloader
@@ -80,6 +81,13 @@ if __name__=="__main__":
         f.writelines(metric)
     
     fpr,tpr,tr = roc_curve(true_lab,pred[:,1])
-    fig = plt.figure()
+    plt.figure()
     plt.plot(fpr,tpr)
     plt.savefig(args.out_dir+'/roc_curve.png')
+
+    plt.figure()
+    conf = confusion_matrix(true_lab,pred_lab,labels=[0,1])
+    disp = ConfusionMatrixDisplay(confusion_matrix=conf,display_labels=[0,1])
+    disp.plot()
+    plt.savefig(args.out_dir+'/confusion_matrix.png')
+
