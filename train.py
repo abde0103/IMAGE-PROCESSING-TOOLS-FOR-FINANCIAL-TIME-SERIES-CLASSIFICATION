@@ -41,7 +41,7 @@ parser.add_argument("--kernel", type=int,default=3,help='kernel windows size')
 
 # Data initialization and loading
 
-def train_epoch(dataloader,model,optimizer,criterion, device):
+def train_epoch(dataloader,model,optimizer,criterion, device,W = None):
     train_loss,train_correct=0.0,0
     model.train()
     for images, labels in dataloader:
@@ -72,13 +72,12 @@ def valid_epoch(dataloader,model,optimizer,criterion, device):
 
 def train(dataloader,model,optimizer,criterion, device, eval,epochs, cv = False):
     history = {'train_loss': [], 'test_loss': [],'train_acc':[],'test_acc':[]}
-    train_loader = dataloader['train'][0]
     
     if eval:
         test_loader = dataloader['val'][0]
     for epoch in range(epochs):
         #print(f"epoch {epoch}/{epochs}")
-        train_loss, train_correct=train_epoch(train_loader,model,optimizer,criterion,device)
+        train_loss, train_correct=train_epoch(train_loader,model,optimizer,criterion,device,W)
         if eval:
             test_loss, test_correct=valid_epoch(test_loader,model,optimizer,criterion,device)
 
@@ -163,8 +162,7 @@ if __name__ == "__main__":
         print('Using CPU')
         device = torch.device('cpu')
     
-
-    criterion = nn.CrossEntropyLoss(reduction='mean')
+    
     if args.optim == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.optim == 'adam':
@@ -179,6 +177,14 @@ if __name__ == "__main__":
                 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
             elif args.optim == 'adam':
                 optimizer = optim.Adam(model.parameters(),lr = args.lr, weight_decay= args.weight_decay)
+            train_loader = data_loaders['train'][0]
+            targets = np.array(data_loaders['train'][i].dataset.targets)
+            W = np.zeros(2)
+            W[0] = len(targets)/np.sum(targets == 0)
+            W[1] = len(targets)/np.sum(targets == 1)
+            W = torch.Tensor(W).to(device=device)
+            W = torch.log(torch.log(W) + 1)+1
+            criterion = nn.CrossEntropyLoss(reduction='mean',weight=W)
             temp = train({'train':[data_loaders['train'][i]],'val':[data_loaders['val'][i]]},\
                   model,optimizer,criterion,device,args.eval or args.test_path,args.epochs, cv=True)
             history['train_loss'].append(temp['train_loss'])
@@ -194,6 +200,15 @@ if __name__ == "__main__":
 
         
     else:
+        train_loader = data_loader['train'][0]
+        targets = np.array(train_loader.dataset.targets)
+        W = np.zeros(2)
+        W[0] = len(targets)/np.sum(targets == 0)
+        W[1] = len(targets)/np.sum(targets == 1)
+        W = torch.Tensor(W).to(device=device)
+        W = torch.log(torch.log(W) + 1)+1
+        breakpoint()
+        criterion = nn.CrossEntropyLoss(reduction='mean',weight=W)
         history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
 
 

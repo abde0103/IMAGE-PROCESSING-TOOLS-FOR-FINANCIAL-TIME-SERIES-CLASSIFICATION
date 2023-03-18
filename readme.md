@@ -10,7 +10,7 @@ One you have the best dataset. To split it in train and test set run
 ```python train_test_split.py --data training_data/w360level3jump10 --ratio 0.8 --output evaluation train.py --data training_data/w30level2jump10 --in_channel 3  --epochs 3  --resizing 50```
 
 To train on training set and save the model
-```python train.py --data training_data/w30level2jump10 --in_channel 3  --epochs 3  --resizing 50 --kernel 3 --save_path model```
+```python train.py --data evaluation/train --in_channel 3  --epochs 3  --resizing 50 --kernel 3 --save_model model```
 
 To evaluate the model on test set
 
