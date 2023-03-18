@@ -36,7 +36,7 @@ parser.add_argument('--test_path', type=str,  metavar='E',
 parser.add_argument('--in_channel', type= int, default=1, help="number of input channel")
 parser.add_argument('--out_channel1', type= int, default=10, help="number of output channel for the first conv layer")
 parser.add_argument("--save_model", type=str,help='location to store the trained')
-parser.add_argument("--resizing", type=int,default=50,help='dimension to resize the raw images in transform')
+parser.add_argument("--resizing", type=int,default=50,help='location to store the trained')
 parser.add_argument("--kernel", type=int,default=3,help='kernel windows size')
 
 # Data initialization and loading
@@ -105,7 +105,8 @@ def train(dataloader,model,optimizer,criterion, device, eval,epochs, cv = False)
             history['test_loss'].append(test_loss)
 
         if args.save_model and (not eval or args.test_path):
-            model_file = 'model_'+'_epoch_' + str(epoch) + '.pth'
+            os.makedirs(args.save_model, exist_ok=True)
+            model_file =args.save_model +'/model_'+'_epoch_' + str(epoch) + '.pth'
             torch.save(model.state_dict(), model_file)
  
     # avg_train_loss = np.mean(history['train_loss'])
