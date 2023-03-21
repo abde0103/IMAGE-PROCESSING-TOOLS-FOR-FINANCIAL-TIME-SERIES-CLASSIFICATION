@@ -88,6 +88,7 @@ if __name__=="__main__":
     plt.xlabel("fpr")
     plt.ylabel("tpr")
     plt.plot(x,x, label = 'random')
+    plt.legend(loc ="best")
     plt.savefig(args.out_dir+'/roc_curve.png')
 
     plt.figure()

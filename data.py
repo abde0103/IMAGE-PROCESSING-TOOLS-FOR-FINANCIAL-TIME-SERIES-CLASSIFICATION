@@ -73,8 +73,9 @@ def get_train_data_loader(data_path,batch_size,shuffle= True,resize= 50):
     w[0] =1/np.sum(temp == 0)
     w[1] = 1/np.sum(temp == 1)
     W = np.zeros(len(temp))
-    W[np.where(temp == 0)[0]] = 1 #w[0]
-    W[np.where(temp == 1)[0]] = 1 #w[1]
+    W = np.log(np.log(W) + 1)+1
+    W[np.where(temp == 0)[0]] = w[0]
+    W[np.where(temp == 1)[0]] = w[1]
     sampler = WeightedRandomSampler(W,int(2*len(W)))
     class_names = dataset.classes
     print(f"Train image size : {len(dataset)}")
@@ -103,9 +104,10 @@ def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0,resize = 5
         temp = np.array(dataset.targets)
         w[0] =1/np.sum(temp == 0)
         w[1] = 1/np.sum(temp == 1)
+        w =  np.log(np.log(W) + 1)+1
         W = np.zeros(len(temp))
-        W[np.where(temp == 0)[0]] = 1 #w[0]
-        W[np.where(temp == 1)[0]] = 1 #w[1]
+        W[np.where(temp == 0)[0]] = w[0]
+        W[np.where(temp == 1)[0]] = w[1]
         W[val_idx] = 0
         #train_sampler = SequentialSampler(train_idx)
         train_sampler = WeightedRandomSampler(W,int(2*len(train_idx)))
