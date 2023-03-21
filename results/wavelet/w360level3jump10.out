@@ -1,0 +1,26 @@
+training and validating
+Cross validation with cv 4
+getting eval data loader...
+train classes: ['0', '1']
+Train image size : 462
+val image size : 154
+Using GPU
+Fold 1/4...
+Epoch:1/3 AVG Training Loss:0.600 AVG Test Loss:0.494 AVG Training Acc 88.31 % AVG Test Acc 88.31 %
+Epoch:2/3 AVG Training Loss:0.498 AVG Test Loss:0.481 AVG Training Acc 88.31 % AVG Test Acc 88.31 %
+Epoch:3/3 AVG Training Loss:0.468 AVG Test Loss:0.425 AVG Training Acc 88.31 % AVG Test Acc 88.31 %
+Fold 2/4...
+Epoch:1/3 AVG Training Loss:0.545 AVG Test Loss:0.541 AVG Training Acc 88.31 % AVG Test Acc 86.36 %
+Epoch:2/3 AVG Training Loss:0.523 AVG Test Loss:0.559 AVG Training Acc 88.31 % AVG Test Acc 86.36 %
+Epoch:3/3 AVG Training Loss:0.481 AVG Test Loss:0.537 AVG Training Acc 87.45 % AVG Test Acc 86.36 %
+Fold 3/4...
+Epoch:1/3 AVG Training Loss:0.538 AVG Test Loss:0.386 AVG Training Acc 88.31 % AVG Test Acc 94.81 %
+Epoch:2/3 AVG Training Loss:0.511 AVG Test Loss:0.474 AVG Training Acc 88.31 % AVG Test Acc 94.81 %
+Epoch:3/3 AVG Training Loss:0.473 AVG Test Loss:0.353 AVG Training Acc 88.74 % AVG Test Acc 95.45 %
+Fold 4/4...
+Epoch:1/3 AVG Training Loss:0.693 AVG Test Loss:0.693 AVG Training Acc 11.69 % AVG Test Acc 16.23 %
+Epoch:2/3 AVG Training Loss:0.693 AVG Test Loss:0.693 AVG Training Acc 11.69 % AVG Test Acc 16.23 %
+Epoch:3/3 AVG Training Loss:0.693 AVG Test Loss:0.693 AVG Training Acc 11.69 % AVG Test Acc 16.23 %
+
+
+Average Training CV Loss: 0.5287 	 Average Test CV Loss: 0.5023 	 Average Training CV Acc: 69.048 	 Average Test CV Acc: 71.591

@@ -72,7 +72,6 @@ def valid_epoch(dataloader,model,optimizer,criterion, device):
 
 def train(dataloader,model,optimizer,criterion, device, eval,epochs, cv = False):
     history = {'train_loss': [], 'test_loss': [],'train_acc':[],'test_acc':[]}
-    
     if eval:
         test_loader = dataloader['val'][0]
     for epoch in range(epochs):
@@ -207,7 +206,6 @@ if __name__ == "__main__":
         W[1] = len(targets)/np.sum(targets == 1)
         W = torch.Tensor(W).to(device=device)
         W = torch.log(torch.log(W) + 1)+1
-        breakpoint()
         criterion = nn.CrossEntropyLoss(reduction='mean',weight=W)
         history = train(data_loader,model,optimizer,criterion,device,args.eval or args.test_path,args.epochs)
 

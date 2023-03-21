@@ -37,6 +37,7 @@ else:
 
 
 def test(dataloader,model, device):
+
     model.eval()
     predictions = []
     labels = []
@@ -81,8 +82,12 @@ if __name__=="__main__":
         f.writelines(metric)
     
     fpr,tpr,tr = roc_curve(true_lab,pred[:,1])
+    x = np.linspace(0,1,len(fpr))
     plt.figure()
-    plt.plot(fpr,tpr)
+    plt.plot(fpr,tpr, label='our model')
+    plt.xlabel("fpr")
+    plt.ylabel("tpr")
+    plt.plot(x,x, label = 'random')
     plt.savefig(args.out_dir+'/roc_curve.png')
 
     plt.figure()
