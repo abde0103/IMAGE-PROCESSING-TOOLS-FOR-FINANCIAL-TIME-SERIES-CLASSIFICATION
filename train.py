@@ -38,6 +38,7 @@ parser.add_argument('--out_channel1', type= int, default=10, help="number of out
 parser.add_argument("--save_model", type=str,help='location to store the trained')
 parser.add_argument("--resizing", type=int,default=50,help='location to store the trained')
 parser.add_argument("--kernel", type=int,default=3,help='kernel windows size')
+parser.add_argument("--clip", action="store_true", help="if you want to clip the gradiant to O.5")
 
 # Data initialization and loading
 
@@ -50,6 +51,8 @@ def train_epoch(dataloader,model,optimizer,criterion, device,W = None):
         output = model(images)
         loss = criterion(output,labels)
         loss.backward()
+        if args.clip:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
         optimizer.step()
         train_loss += loss.item() * images.size(0)
         scores, predictions = torch.max(output.data, 1)
@@ -152,7 +155,7 @@ if __name__ == "__main__":
         data_loader,classes =get_train_data_loader(args.data,args.batch_size,resize=resize)
     
     assert len(classes) == 2, "the number of classes must be equals to 2"
-    model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size)
+    model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size,k_size=k_size)
     if use_cuda:
         print('Using GPU')
         model.cuda()
@@ -171,7 +174,7 @@ if __name__ == "__main__":
         history = {'train_loss':[],'train_acc':[],'test_acc':[], 'test_loss':[]}
         for i in range(args.cv) :
             print(f"Fold {i+1}/{args.cv}...")
-            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size).to(device)
+            model = Cnn(len(classes),in1=args.in_channel, out1=args.out_channel1, linear_size=linear_size,k_size=k_size).to(device)
             if args.optim == 'sgd':
                 optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
             elif args.optim == 'adam':
