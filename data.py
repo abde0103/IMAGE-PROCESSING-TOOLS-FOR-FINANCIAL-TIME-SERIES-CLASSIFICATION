@@ -72,8 +72,8 @@ def get_train_data_loader(data_path,batch_size,shuffle= True,resize= 50):
     temp = np.array(dataset.targets)
     w[0] =1/np.sum(temp == 0)
     w[1] = 1/np.sum(temp == 1)
+    w= np.log(np.log(w) + 1)+1
     W = np.zeros(len(temp))
-    W = np.log(np.log(W) + 1)+1
     W[np.where(temp == 0)[0]] = w[0]
     W[np.where(temp == 1)[0]] = w[1]
     sampler = WeightedRandomSampler(W,int(2*len(W)))
@@ -104,7 +104,7 @@ def  get_eval_data_loader(data_path, batch_size, shuffle= True,cv = 0,resize = 5
         temp = np.array(dataset.targets)
         w[0] =1/np.sum(temp == 0)
         w[1] = 1/np.sum(temp == 1)
-        w =  np.log(np.log(W) + 1)+1
+        w =  np.log(np.log(w) + 1)+1
         W = np.zeros(len(temp))
         W[np.where(temp == 0)[0]] = w[0]
         W[np.where(temp == 1)[0]] = w[1]
