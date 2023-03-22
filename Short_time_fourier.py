@@ -33,7 +33,7 @@ def STFourier (denoised_logreturn, path ='',show = False  ) :
     
     
     plt.pcolormesh(t, f, Sxx, shading='gouraud', cmap = 'jet')
-    plt.axis ('off')
+#     plt.axis ('off')
     plt.savefig(path)
     
     return np.abs(Sxx)
